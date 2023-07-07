@@ -16,7 +16,7 @@ import javax.servlet.http.HttpSession;
 * 本demo中，必然是网页切换数据源的优先级高。设置@Order。数字越小执行优先级越高(数字越小越先执行，后面执行会覆盖Holder)*/
 @Aspect
 @Component
-@Order(13)
+@Order(13)//数字更大，更靠后执行。以此为准。如果它更小，会有如下情况（当方法上添加注解，网页修改源则不生效)
 public class GlobalDataSourceAspect {
     @Autowired
     HttpSession httpSession;
