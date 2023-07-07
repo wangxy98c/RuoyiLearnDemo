@@ -12,7 +12,7 @@ import java.util.List;
 public class UserService {
     @Autowired
     Usermapper usermapper;
-    @DataSource("slave")
+    @DataSource("slave") //这里的注解是否总是生效与两个切面的优先级有关。
     public List<User> getAllUsers(){
         return usermapper.getAllUsers();
     }

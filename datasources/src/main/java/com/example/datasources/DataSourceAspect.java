@@ -6,11 +6,13 @@ import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Pointcut;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.core.annotation.AnnotationUtils;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 /*自定义一个切面（AOP依赖），当有@DataSource注解时，把数据源存入*/
 @Component
 @Aspect
+@Order(10) //为了优先级低于网页修改数据源.
 public class DataSourceAspect {
     /*@annotation(com.example.datasources.DataSource)如果方法上有对应的注解，拦截下来。
      *@within(com.example.datasources.DataSource)表示类上有注解，类中的方法拦截 */
