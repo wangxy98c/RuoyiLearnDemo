@@ -9,6 +9,7 @@
         <option value="$PROJECT_DIR$/ratelimiter/pom.xml" />
         <option value="$PROJECT_DIR$/repeatsubmit/pom.xml" />
         <option value="$PROJECT_DIR$/submitrepeat/pom.xml" />
+        <option value="$PROJECT_DIR$/datascope/pom.xml" />
       </list>
     </option>
   </component>
