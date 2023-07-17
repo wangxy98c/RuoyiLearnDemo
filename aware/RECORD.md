@@ -17,4 +17,3 @@ void contextLoads() {
 通过Bean的名字获取到对象并调用其中方法。多种方法。
 # 存在的意义
 可以在与Spring无关的地方获取Bean来使用其中方法
-# 主要示例代码都在Test里
