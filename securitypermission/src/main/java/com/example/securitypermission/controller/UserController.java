@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@EnableGlobalMethodSecurity(prePostEnabled = true)// 开启@PreXxxx注解
+
 public class UserController {
     @RequestMapping("/add")//##note 注意都是Request，而不是get、post、put、等
     //@PreAuthorize("hasPermission('/add','sys:user:add')")

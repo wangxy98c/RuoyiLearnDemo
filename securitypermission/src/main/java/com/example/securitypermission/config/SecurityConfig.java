@@ -3,6 +3,7 @@ package com.example.securitypermission.config;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.access.expression.method.DefaultMethodSecurityExpressionHandler;
+import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -10,6 +11,7 @@ import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 
 @Configuration
+@EnableGlobalMethodSecurity(prePostEnabled = true)// 开启@PreXxxx注解
 public class SecurityConfig {
     @Bean
     UserDetailsService us(){
@@ -28,7 +30,7 @@ public class SecurityConfig {
     /*为了使用自定义的CustomSecurityExpressionRoot
     * 完成后
     * 此时，@PreAuthorize中的方法就被替换为自定义的方法了。且可以用自己新名称的方法*/
-    @Bean
+    @Bean//RuoYi改造不能写在这里。这里的SecurityConfig只是一个普通的配置类
     DefaultMethodSecurityExpressionHandler defaultMethodSecurityExpressionHandler(){
         return new CustomMethodSecurityExpressionHandler();
     }

@@ -35,3 +35,5 @@ Security中对权限和角色的判断代码没有什么大的区别，只是关
 1. 定义CustomSecurityExpressionRoot
 2. 定义CustomMethodSecurityExpressionHandler（让Handler使用自己的CustomSecurityExpressionRoot。以及配置）
 3. 在SecurityConfig中注册新的Handler
+
+#### RuoYi改造的注册Bean不能写在这里SecurityConfig类中。因为这里的SecurityConfig只是一个普通的配置类。
