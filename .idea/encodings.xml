@@ -4,6 +4,11 @@
     <file url="file://$PROJECT_DIR$/aware/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/datascope/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/datasources/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/flowable-idm/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/flowableIdm/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/flowableIdm/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/flowableprocess/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/flowableprocess/src/main/resources" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/ratelimiter/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/securitypermission/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/springexpressionlanguage/src/main/java" charset="UTF-8" />
