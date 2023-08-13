@@ -68,5 +68,10 @@ public class ACTRUTest {
     @Test
     void test06(){
         runtimeService.deleteProcessInstance("ProcessInstanceId","the reason of delete");
+
+    }
+    @Test
+    void tst10(){
+
     }
 }

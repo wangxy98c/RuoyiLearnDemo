@@ -59,3 +59,13 @@ for (Execution execution : list) {
 }//然后它就是执行到了哪一步（可能多条路线？）
 ```
 
+# 挂起、恢复
+## 流程定义
+`repositoryService.isProcessDefinitionSuspended(pd.getId())` 判断是否挂起
+`repositoryService.suspendProcessDefinitionById();` 挂起
+`repositoryService.activateProcessDefinitionById();` 激活
+**其实就是修改_RE_PROCDEF中的SUSPENSTION_STATE字段 1表示激活的，2表示挂起的**
+## 流程实例
+挂起和激活其实也是上面的函数，不过参数不同。（比如第二个参数是 “是否挂起对应的实例”， 第三个参数 是何时被挂起）
+**涉及到 `_RU_EXECUTION` `_RU_TASK` `_RE_PROCDEF` 三张表**
+

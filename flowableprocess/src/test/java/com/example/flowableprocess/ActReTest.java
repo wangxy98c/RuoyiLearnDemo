@@ -40,5 +40,7 @@ public class ActReTest {
         List<Deployment> list = repositoryService.createDeploymentQuery().deploymentCategory("").list();
         //repositoryService.createNativeDeploymentQuery().sql("").parameter("","").list();
         //repositoryService.deleteDeployment(id);
+        //repositoryService.activateProcessDefinitionById();
     }
+
 }
