@@ -23,3 +23,17 @@
 **操作的表是 ACT_ID_PROPERTY**
 1. `idmManagementService.getProperties();`//key:schema.version;value:6.7.2.0
 2. `idmManagementService.getTableName(Group.class);`// 获得参数里的那个实体类的表名=>ACT_ID_GROUP
+# 设置(添加)用户/组
+```java
+UserEntityImpl user=new UserEntityImpl();
+user.setId("javaboy");
+user.setDisplayName("一点雨");
+identityService.saveUser(user);
+```
+```java
+GroupEntityImpl g=new GroupEntityImpl();
+g.setName("经理");
+g.setId("manager");
+g.setRevision(0);
+identityService.saveGroup(g);
+```
