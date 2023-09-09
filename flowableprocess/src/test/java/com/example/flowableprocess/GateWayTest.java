@@ -32,4 +32,9 @@ public class GateWayTest {
             taskService.complete(task.getId());
         }
     }
+    @Test
+    void test04(){
+        Task task = taskService.createTaskQuery().taskAssignee("javaboy").singleResult();
+        taskService.setVariable(task.getId(),"resulet","同意");
+    }
 }

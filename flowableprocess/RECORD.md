@@ -271,6 +271,333 @@ Groovy是基于JVM的编程语言，写java也可以运行。添加依赖
 
 可以自动根据具体条件，**自动转为上面两种**（排他网关、并行网关）
 
-# 全局流程变量
+# 流程变量
 
-## 启动时设置
+## 全局流程变量
+
+### 启动时设置
+
+其实就是启动时带上map参数，不需要提前在ui中定义/使用。前面用到好几次了。
+
++ 获取变量属性值。`runtimeService.getVariable(execution.getId(),"name")`
+
+如果是`getVaribales()`时不需要后面的参数，会把参数都返回.
+
+### 通过Task设置
+
+```java
+//先查询task
+Task task = taskService.createTaskQuery().taskAssignee("javaboy").singleResult();
+taskService.setVariable(task.getId(),"resulet","同意");//逐个设置
+//或使用setVariables用map批量设置
+```
+
+其中：taskId用于查询Task对应的流程实例Id和执行实例Id，插入时会用到。
+
+### 完成任务时设置
+
+`taskService.complete(task.getId(),map)`直接在完成函数中加参数即可
+
+### 直接通过流程执行实例来设置
+
+流程变量实际上是和流程实例相关的，故而直接通过流程执行实例设置也可以。
+
+`runtimeService.setVariable(execution.getId(),"name","javaboy")`
+
+## 本地流程变量
+
+全局变量和流程绑定。但是本地流程变量是和一个具体的Task绑定的，Task执行完毕，流程变量消失
+
++ `taskService.setVariableLoacl(task.getId,map)`。注意这里是Local。
+
+本地流程变量在数据库中比全局变量多了一个**Task_Id字段**。
+
+**需要注意，用`runtimeService.getVariable`是搜索不到的，使用`taskService`可以**。
+
+当前任务**完成**之后，流程变量会被**删除**
+
++ 同理可以在完成任务时设置：`taskService.complete(task.getId(),map,true);`  *true表示是LoaclScope*
+
++ 为Execution设置（runtime可用）
+
+  `runtimeServeice.setVariableLocal(task1.getExecutionId(),"name")`
+
+  读取`runtimeServeice.getVariableLocal(task2.getExecutionId(),"name")`
+
+  + task1和task2是两个不同的人，但同一个流程、属于同一个执行实例，所以设置后可以读取到。
+
+## 临时流程变量
+
+临时变量不会存入数据库。
+
+### 流程启动时设置
+
+`runtimeService.createProcessInstanceBuilder.transientVariable("day",10).transientVariable("name","javaboy")...processDefinitionKey("").start()`
+
++ 不能直接使用start了，需要借助Builder来创建。且可以连续创建多个，最后`processXxx.start`
+
+### 流程完成时设置
+
+`taskService.complete(task.getId(),null,transientVariablesMap);`
+
+第二个参数是全局的，第三个是临时变量。
+
+# 历史信息
+
+## 历史流程
+
+查询**已经完成的流程**的信息
+
+`historyService.createHistoricProcessInstanceQuery().finished().list();`
+
+查询还没完成的信息`.unfinished()`
+
+其实也可以看 EndTime字段。空表示未执行完
+
+## 历史任务
+
+`historyService.createHistoricTaskInstanceQuery().taskAssignee("zhangsan").finished().list();`其实就是多个一个`.taskAssignee()`的筛选而已。
+
+## 历史活动
+
+```java
+List<HistoricProcessInstance> processInstances = 		historyService.createHistoricProcessInstanceQuery().finished().list();
+for (HistoricProcessInstance pi : processInstances) {
+            List<HistoricActivityInstance> list = 	historyService.createHistoricActivityInstanceQuery().processInstanceId(pi.getId()).list();
+```
+
+## 历史变量
+
+`historyService.createHistoricVariableInstanceQuery().processInstanceId(pi.getId()).list();`
+
+## 历史日志
+
+其实就是前面的四个东西
+
+`historyService.createProcessInstanceHistoryLogQuery(pi.getId());` LogQuery。
+
+## 历史权限
+
+`historyService.getHistoricIdentityLinksForProcessInstance(pi.getId())` 查询一个流程的处理人
+
+## 自定义SQL
+
+`historyService.createNativeHistoricProcessInstanceQuery().sql("");`
+
+`historyService.createNativeHistoricTaskInstanceQuery().sql("")`
+
+## 日志级别
+
+配置哪些历史信息存入到 ACT_HI_XXX表中，在配置文件中设置
+
+`flowable.history-level=activity`
+
++ None：全都不存储
++ Activity：存储所有 **流程实例 、活动实例**
++ Audit（默认）：Activity基础上增加 **流程的历史详细信息**
++ Full：Activity基础上再存储**变量的变化信息**
+
+# 定时
+
+## 定时激活
+
+### 流程定义
+
+使用`.activateProcessDefinitionsOn`给流程定义设置一个激活时间。`ACT_RE_PROCDEF`表中`SUSPENSION_STATE`字段值为2表示挂起状态。在`ACT_RU_TIMER_JOB`表中保存了要执行的定时任务，`DUEDATE_`字段保存了定时任务执行的时间。执行后把字段值改为1表示可用
+
+```java
+DeploymentBuilder deploymentBuilder = repositoryService.createDeployment()
+                .name("Javaboy的工作流")//指_DEPLOYMENT中的name属性
+                .category("这是我的流程分类")//指_DEPLOYMENT中的category属性,不是xml里的那个
+                .key("自定义工作流的key")//指_DEPLOYMENT中的key属性
+                //.tenantId("tenantId1")
+                //设置‘流程定义’激活的时间，到达这个时间之前它不可用。到达时间点后。可以启用 
+                .activateProcessDefinitionsOn(new Date(System.currentTimeMillis()+120*1000))//2分钟后激活
+                .addInputStream(file.getOriginalFilename(), file.getInputStream());//设置文件输入流 add可以有多种方式，此处用流
+        Deployment deploy = deploymentBuilder.deploy();
+```
+
+## 定时挂起
+
+它是把 **流程定义** 和 对应的 **流程实例** **全部挂起**
+
+`repositoryService.suspendProcessDefinitionByKey("Demo01",true,new Date())`
+
+#### 对应的：定时激活
+
+`repositoryService.activeProcessDefinitionByKey("Demo01",true,new Date())`
+
+## 定时任务执行过程
+
+并不是从`_TIMER_JOB`中查找定时任务，而是去`_RU_JOB`中查找数据（找到了立马执行）。时间到了以后，数据从`_TIMER_JOB`移动到`_RU_JOB`中然后再执行（便于后悔）。
+
+比如**定时任务**（挂起）后**反悔**，则可以将定时任务移动到`DeadLetterJob`表中，则定时任务不会再执行
+
+`managementServie.moveJobToDeadLetterJob(jobId)`
+
+任务再从`DeadLetterJob`中**移回去**(又反悔)（但不管时间到不到都会立刻执行）：`mangementService.moveDeadLetterJobtoExecutableJob(jobId,retires)`第二个参数是重试次数
+
+假如设置定时挂起后想要立刻挂起（移动到`RU_JOB`表中即可) `managementServie.moveTimerToExecutableJob(jobId)`
+
+# 流程表单
+
+1. 动态表单：一般来说不需要完整的页面，单纯的表单属性
+2. 外置表单：自己定义一个HTML或JSON，在项目中引用。一般来说流程中用到的表单基本上都是外置表单
+3. 内置表单：在ui中使用的那种
+
+无论哪种，都**只有**在**开始节点和任务节点**（不包括连线、网关等）才支持表单定义。
+
+> 为什么需要表单？如果使用变量在流程中去传递数据，变量传送数据的特点是零存零取，但是表单可以零存整取（可以一个一个设置，一次全拿出来）
+
+## 动态表单
+
+![image-20230825205409569](./RECORD.assets/image-20230825205409569.png)
+
+### 开始节点表单
+
+`formService.getStartFormData(processDefintion.getId());`获得流程定义开始节点的表单
+
+### 启动带表单的实例（开始节点有表单的情况）
+
+用`formService.submitStartFormData(pd.getId(),vars)` 推荐此方式
+
+也可以用`runtimeService.startProcessInstanceByKey("Demo01",vars);`但是这种方式**不会检查**各个表单属性是否正确（包括必须项是否填写，数据类型等）
+
+### 查询任务上的表单
+
+`formService.getTaskFormData(task.getId());`
+
+### 保存和完成
+
+### 保存
+
+不会提交，其实就是修改某个表单数据
+
+`formService.saveFormData(task.getId(),vars);` 需要注意，vars必须是全部的表单（即required的都得有，不是required的不管是不是修改都不必须）
+
+### 完成
+
+`formService.submitTaskFormData(task.getId(),vars);` 推荐，因为会校验数据。但日期格式暂不会校验
+
+`taskService.complete()` 但它不会进行表单数据的校验，只是当作变量
+
+## 外置表单
+
+提前准备一个Html文件，作为外置表单。askLeave.html 如下所示。在开始节点的`表单标识`中填入
+
+```html
+<form action="">
+    <table>
+        <tr>
+            <td>请假天数:</td>
+            <td><input type="text" name="days" ></td>
+        </tr>
+        <tr>
+            <td>请假理由:</td>
+            <td><input type="text" name="reason"></td>
+        </tr>
+        <tr>
+            <td>起始时间:</td>
+            <td><input type="date" name="startTime"></td>
+        </tr>
+        <tr>
+            <td>结束实践</td>
+            <td><input type="date" name="endTime"></td>
+        </tr> 
+    </table>
+</form>
+```
+
++ 需要注意的是，此种方式在部署时需要同表单一起部署（Form表单需要跟流程具有相同的部署ID） 否则会在运行的时候查询不到表单。新写一个部署方法并部署。可以看到他们的ID是一样的
+
+### 查看启动流程上的表单
+
+```java
+ProcessDefinition pd = repositoryService.createProcessDefinitionQuery().processDefinitionKey("ExtFormDemo01").latestVersion().singleResult();
+        String startFormKey = formService.getStartFormKey(pd.getId());//获取启动节上外置表单的key
+        logger.info("startFormKey is :",startFormKey);
+        //查询启动节点上，渲染之后的流程表单（主要针对外置表单，动态表单没用）
+        String renderedStartForm = (String) formService.getRenderedStartForm(pd.getId());
+        logger.info(renderedStartForm);
+```
+
++ 用法：如果是web项目，可以用ajax获得这个结果集，这个结果集就是一个已经渲染过的html。拿到html后就可以放到一个div中在前端渲染出来
+
+  原html如下所示：
+
+  ```html
+  <form action="">
+      <table>
+          <tr>
+              <td>请假天数:</td>
+              <td><input type="text" name="days" value="${days}" ></td>
+          </tr>
+        	略
+  ```
+
+  从task中获得的是渲染后的html。（已经填入了值，比如${days}变成了10）
+
+  ```html
+  <table>
+          <tr>
+              <td>请假天数:</td>
+              <td><input type="text" name="days" value="10" ></td>
+          </tr>
+    			略
+  ```
+
+  ## Json表单
+  
+  `flowable.form.resource-location=classpath*:/forms/` Json表单的默认位置
+  
+  `flowable.form.resource-suffixes=**.form`默认后缀是：`.form`
+  
+  但.form也是Java-Swing配置的默认后缀，在IDEA中，会被当成swing的配置打开。我们需要在一个外部编辑器中编辑好这个.form文件（不然就是IDEA自动判定为swing中的那种格式并配置）。form文件格式如下所示（不用IDEA编辑）
+  
+  ![image-20230909095409242](./RECORD.assets/image-20230909095409242.png)
+  
+  + 其中key是唯一的（多个表单时），用于`表单的标识`
+
+# 绘制
+
+## 根据流程定义绘制流程图
+
+```java
+ProcessDefinition processDefinition = repositoryService.createProcessDefinitionQuery().processDefinitionKey("").latestVersion().singleResult();
+        BpmnModel bpmnModel = repositoryService.getBpmnModel(processDefinition.getId());
+        DefaultProcessDiagramGenerator generator = new DefaultProcessDiagramGenerator();
+        InputStream stream = generator.generatePngDiagram(bpmnModel, 1.0, true);//流程图对象、缩放因子、是否绘制连接线上的文本
+        FileUtils.copyInputStreamToFile(stream,new File("/path/pngname.png"));
+        stream.close();
+```
+
+## 绘制当前流程进度
+
+ ```java
+ void test02(){
+         ProcessDefinition processDefinition = repositoryService.createProcessDefinitionQuery().processDefinitionKey("").latestVersion().singleResult();
+         //注意此处最好判断是不是空，空就不需要生成直接返回即可
+         BpmnModel bpmnModel = repositoryService.getBpmnModel(processDefinition.getId());
+         DefaultProcessDiagramGenerator generator = new DefaultProcessDiagramGenerator();
+         //以上内容同绘制，进度的区别在下面.
+         //查询当前流程下所有的活动信息（已经经过的活动会记录在数据库中，被用于判断并绘制）
+         List<String> highLightedActivities=new ArrayList<>();
+         List<String> highLightedFlows=new ArrayList<>();
+         List<ActivityInstance> list = runtimeService.createActivityInstanceQuery().processInstanceId(processDefinition.getId()).list();
+         for (ActivityInstance activityInstance : list) {
+             //拿到每个，判断各种类型并处理
+             if(activityInstance.getActivityType().equals("sequenceFlow")){
+                 highLightedFlows.add(activityInstance.getActivityId());
+             }else{
+                 highLightedActivities.add(activityInstance.getActivityId());
+             }
+         }
+         double scaleFactor=1.0;
+         boolean drawSequeneFlowNameWithNoLabelDI=true;//以上是各种参数配置
+         generator.generateDiagram(bpmnModel,"PNG",highLightedActivities,highLightedFlows,scaleFactor,drawSequeneFlowNameWithNoLabelDI);
+     }
+ ```
+
+## 绘制执行完毕的流程图
+
++ 主要差别在于把上面的`runtimeService`换成`historyService` 
